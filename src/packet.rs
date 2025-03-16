@@ -1,5 +1,5 @@
 #[derive(Debug, Clone)]
-struct Frame<'a> {
+struct Packet<'a> {
     src_mac: &'a String,
     dest_mac: &'a String,
     src_ip: &'a String,
@@ -8,10 +8,10 @@ struct Frame<'a> {
     is_arp: bool,
 }
 
-impl<'a> Frame<'a> {
+impl<'a> Packet<'a> {
 
-    // We do not want the frame to own the addresses
-    // We want the frame to own the data
+    // We do not want the packet to own the addresses
+    // We want the packet to own the data
     fn new(
         src_mac: &'a String, 
         dest_mac: &'a String, 

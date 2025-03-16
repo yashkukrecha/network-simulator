@@ -2,7 +2,7 @@
 struct Switch {
     mac_table: HashMap<String, usize>,
     ports: Vec<Option<Rc<dyn Device>>>,
-    frames: Vec<Rc<Frame>>,
+    packets: Vec<Rc<Packet>>,
 }
 
 impl Switch {
@@ -10,7 +10,7 @@ impl Switch {
         Self {
             mac_table: HashMap::new(),
             ports: vec![None; port_count],
-            frames: Vec::new(),
+            packets: Vec::new(),
         }
     }
 }
