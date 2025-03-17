@@ -1,5 +1,5 @@
-use std::Collections::HashMap;
-use std::rc::Rc; // reference counting
+use std::collections::HashMap;
+use std::rc::Rc;
 use crate::packet::Packet;
 
 #[derive(Debug)]
@@ -15,32 +15,72 @@ struct Host {
 }
 
 impl Host {
-    fn new(ip_address: String, mac_address: String, port: usize, switch: &Switch) -> Self {
+    fn new(ip_address: String, mac_address: String, port: usize, switch: Rc<Switch>) -> Self {
         Self {
             arp_table: HashMap::new(),
             routing_table: HashMap::new(),
-            incoming_packet_history: Vec::new(),
-            outgoing_packet_history: Vec::new(),
+            incoming_packets: Vec::new(),
+            outgoing_packets: Vec::new(),
             ip_address,
             mac_address,
-            port
-            switch
+            port,
+            switch,
         }
     }
 
-    fn send_arp_request(self, dest_ip: String) -> Packet {
-        Packet::new(&self.mac_address, "ff:ff:ff:ff:ff:ff", &self.ip_address, &dest_ip, Vec::new(), true)
+    fn arp_request(&mut self, dest_ip: &str) -> String {
+        let request = Packet::new(
+            &self.mac_address,
+            "UNKNOWN",
+            &self.ip_address,
+            dest_ip,
+            Vec::new(),
+            true
+        );
+
+        let response = self.switch.process_arp_request(Rc::new(request), self.port);
+        self.arp_table.insert(dest_ip.to_string(), response.src_mac.clone());
+        response.src_mac.clone()
     }
 
-    fn receive_arp_response(self, packet: Packet) {
-        arp_table.insert(packet.src_ip, packet.src_mac);
-    }
+    fn send_packet(&mut self, dest_ip: &str, data: Vec<u8>) {
+        // Check if they are in the same subnet, otherwise find the router that can forward the packet
+        let hop_dest_ip = if self.ip_address.get(..9) == dest_ip.get(..9) {
+            dest_ip.to_string()
+        } else {
+            let mut found = None;
+            for (router_ip, networks) in &self.routing_table {
+                if networks.iter().any(|net| dest_ip.get(..9) == net.get(..9)) {
+                    found = Some(router_ip.clone());
+                    break;
+                }
+            }
+            if let Some(router_ip) = found {
+                router_ip
+            } else {
+                println!("No route to {}", dest_ip);
+                return;
+            }
+        };
 
-    // Destination MAC address will be for the next hop
-    // Destination IP address will be for the end-to-end connection
-    fn send_packet(self, dest_ip: String, dest_mac: String, data: Vec<u8>) -> Packet {
-        let packet = Packet::new(&self.mac_address, &dest_mac, &self.ip_address, &dest_ip, data, false)
-        outgoing_packet_history.push(packet);
-        packet
+        // Check the ARP table if the destination MAC address exists, else send an ARP request
+        let hop_dest_mac = match self.arp_table.get(&hop_dest_ip) {
+            Some(mac) => mac.clone(),
+            None => self.arp_request(&hop_dest_ip),
+        };
+
+        let packet = Rc::new(Packet::new(
+            &self.mac_address,
+            &hop_dest_mac,
+            &self.ip_address,
+            dest_ip,
+            data,
+            false
+        ));
+
+        // Need to clone so that you maintain ownership of packet
+        self.outgoing_packets.push(Rc::clone(&packet));
+        let response = self.switch.process_packet(Rc::clone(&packet), self.port);
+        self.incoming_packets.push(response);
     }
 }
