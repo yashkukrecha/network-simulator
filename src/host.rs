@@ -28,6 +28,10 @@ impl Host {
         }
     }
 
+    fn populate_routing_table(&mut self, router_ip: String, network: String) {
+        self.routing_table.entry(router_ip).or_insert(Vec::new()).push(network);
+    }
+
     fn send_arp_request(&mut self, dest_ip: &str) -> String {
         let request = Packet::new(
             &self.mac_address,
@@ -100,7 +104,7 @@ impl Host {
         None
     }
 
-    fn receive_packet(&mut self, request: Rc<Packet>) -> Option<(String, usize)> {
-        None
+    fn receive_packet(&mut self, request: Rc<Packet>) {
+        self.incoming_packets.push(Rc::clone(&request));
     }
 }
