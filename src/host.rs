@@ -28,7 +28,7 @@ impl Host {
         }
     }
 
-    fn arp_request(&mut self, dest_ip: &str) -> String {
+    fn send_arp_request(&mut self, dest_ip: &str) -> String {
         let request = Packet::new(
             &self.mac_address,
             "UNKNOWN",
@@ -66,10 +66,10 @@ impl Host {
         // Check the ARP table if the destination MAC address exists, else send an ARP request
         let hop_dest_mac = match self.arp_table.get(&hop_dest_ip) {
             Some(mac) => mac.clone(),
-            None => self.arp_request(&hop_dest_ip),
+            None => self.send_arp_request(&hop_dest_ip),
         };
 
-        let packet = Rc::new(Packet::new(
+        let request = Rc::new(Packet::new(
             &self.mac_address,
             &hop_dest_mac,
             &self.ip_address,
@@ -79,8 +79,28 @@ impl Host {
         ));
 
         // Need to clone so that you maintain ownership of packet
-        self.outgoing_packets.push(Rc::clone(&packet));
-        let response = self.switch.process_packet(Rc::clone(&packet), self.port);
+        self.outgoing_packets.push(Rc::clone(&request));
+        let response = self.switch.process_packet(Rc::clone(&request), self.port);
         self.incoming_packets.push(response);
+    }
+
+    fn receive_arp_request(&mut self, packet: Rc<Packet>) -> Option<Rc<Packet>> {
+        // If the ARP request is intended for this host, return the MAC value
+        if packet.dest_ip == self.ip_address {
+            self.arp_table.insert(packet.src_ip.clone(), packet.src_mac.clone());
+            return Some(Rc::new(Packet::new(
+                &self.mac_address,
+                &packet.src_mac,
+                &self.ip_address,
+                &packet.src_ip,
+                Vec::new(),
+                true,
+            )));
+        }
+        None
+    }
+
+    fn receive_packet(&mut self, request: Rc<Packet>) -> Option<(String, usize)> {
+        None
     }
 }
