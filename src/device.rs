@@ -38,13 +38,11 @@ impl Device for Router {
         &self.ip_address
     }
 
-    fn receive_arp_request(&mut self, _packet: Rc<Packet>) -> Option<Rc<Packet>> {
-        // Dummy implementation: routers could implement ARP reply logic
-        None
+    fn receive_arp_request(&mut self, packet: Rc<Packet>) -> Option<Rc<Packet>> {
+        self.receive_arp_request(packet)
     }
 
-    fn receive_packet(&mut self, _packet: Rc<Packet>) -> Option<Rc<Packet>> {
-        // Dummy implementation: routers could implement packet forwarding logic
-        None
+    fn receive_packet(&mut self, packet: Rc<Packet>) -> Option<Rc<Packet>> {
+        self.forward_packet(packet)
     }
 }

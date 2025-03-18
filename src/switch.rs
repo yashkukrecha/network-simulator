@@ -8,7 +8,7 @@ use crate::device::Device;
 pub struct Switch {
     mac_table: HashMap<String, usize>, // MAC -> port
     ports: Vec<Option<Rc<RefCell<dyn Device>>>>,
-    packets: Vec<Rc<Packet>>,
+    packets: Vec<Rc<Packet>>, // Will be used in multithreading
 }
 
 impl Switch {
@@ -18,6 +18,16 @@ impl Switch {
             ports: vec![None; port_count],
             packets: Vec::new(),
         }
+    }
+
+    pub fn add_device(&mut self, device: Rc<RefCell<dyn Device>>) -> Option<usize> {
+        for (i, port) in self.ports.iter_mut().enumerate() {
+            if port.is_none() {
+                *port = Some(device);
+                return Some(i);
+            }
+        }
+        None
     }
 
     pub fn process_arp_request(&mut self, packet: Rc<Packet>, port: usize) -> Option<Rc<Packet>> {

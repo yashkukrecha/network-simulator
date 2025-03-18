@@ -26,7 +26,7 @@ impl Host {
             outgoing_packets: Vec::new(),
             ip_address,
             mac_address,
-            port,
+            port, // Temporary port, will be assigned later
             switch,
         }
     }
