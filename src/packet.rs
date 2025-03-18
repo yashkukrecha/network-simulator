@@ -1,15 +1,15 @@
 #[derive(Debug, Clone)]
-struct Packet {
-    src_mac: String,
-    dest_mac: String,
-    src_ip: String,
-    dest_ip: String,
-    data: Vec<u8>,
-    is_arp: bool,
+pub struct Packet {
+    pub src_mac: String,
+    pub dest_mac: String,
+    pub src_ip: String,
+    pub dest_ip: String,
+    pub data: Vec<u8>,
+    pub is_arp: bool,
 }
 
 impl Packet {
-    fn new(
+    pub fn new(
         src_mac: &str,
         dest_mac: &str,
         src_ip: &str,
@@ -27,7 +27,7 @@ impl Packet {
         }
     }
 
-    fn rebuild_L3(self, src_mac: String, dest_mac: String) -> Self {
+    pub fn rebuild_L3(self, src_mac: String, dest_mac: String) -> Self {
         Self {
             src_mac,
             dest_mac,
