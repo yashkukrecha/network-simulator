@@ -27,14 +27,14 @@ impl Packet {
         }
     }
 
-    pub fn rebuild_L3(self, src_mac: String, dest_mac: String) -> Self {
+    pub fn rebuild_L3(&mut self, src_mac: String, dest_mac: String) -> Self {
         Self {
             src_mac,
             dest_mac,
-            src_ip: self.src_ip,
-            dest_ip: self.dest_ip,
-            data: self.data,
-            is_arp: self.is_arp,
+            src_ip: self.src_ip.clone(),
+            dest_ip: self.dest_ip.clone(),
+            data: self.data.clone(),
+            is_arp: self.is_arp.clone(),
         }
     }
 }

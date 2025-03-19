@@ -1,24 +1,13 @@
 use std::rc::Rc;
-use std::cell::RefCell;
 use crate::packet::Packet;
 
-pub trait Device {
-    fn get_mac_address(&self) -> &str;
-    fn get_ip_address(&self) -> &str;
+pub trait Device: std::fmt::Debug {
     fn receive_arp_request(&mut self, packet: Rc<Packet>) -> Option<Rc<Packet>>;
     fn receive_packet(&mut self, packet: Rc<Packet>) -> Option<Rc<Packet>>;
 }
 
 use crate::host::Host;
 impl Device for Host {
-    fn get_mac_address(&self) -> &str {
-        &self.mac_address
-    }
-
-    fn get_ip_address(&self) -> &str {
-        &self.ip_address
-    }
-
     fn receive_arp_request(&mut self, packet: Rc<Packet>) -> Option<Rc<Packet>> {
         self.receive_arp_request(packet)
     }
@@ -30,14 +19,6 @@ impl Device for Host {
 
 use crate::router::Router;
 impl Device for Router {
-    fn get_mac_address(&self) -> &str {
-        &self.mac_address
-    }
-    
-    fn get_ip_address(&self) -> &str {
-        &self.ip_address
-    }
-
     fn receive_arp_request(&mut self, packet: Rc<Packet>) -> Option<Rc<Packet>> {
         self.receive_arp_request(packet)
     }

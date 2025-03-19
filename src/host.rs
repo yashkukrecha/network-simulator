@@ -3,17 +3,16 @@ use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 use crate::packet::Packet;
 use crate::switch::Switch;
-use crate::device::Device;
 
 #[derive(Debug)]
 pub struct Host {
     arp_table: HashMap<String, String>, // IP address -> MAC address
-    routing_table: HashMap<String, Vec<String>>, // Router IP address -> list of destination networks
+    routing_table: HashMap<String, Vec<(String, usize)>>, // Router IP address -> list of destination networks + hops needed
     incoming_packets: Vec<Rc<Packet>>,
     outgoing_packets: Vec<Rc<Packet>>,
     ip_address: String,
     mac_address: String,
-    port: usize,
+    pub port: usize,
     switch: Weak<RefCell<Switch>>,
 }
 
@@ -31,8 +30,10 @@ impl Host {
         }
     }
 
-    pub fn populate_routing_table(&mut self, router_ip: String, network: String) {
-        self.routing_table.entry(router_ip).or_insert(Vec::new()).push(network);
+    pub fn assign_port(&mut self, port: usize) { self.port = port; }
+
+    pub fn populate_routing_table(&mut self, router_ip: String, network: String, metric: usize) {
+        self.routing_table.entry(router_ip).or_insert(Vec::new()).push((network, metric));
     }
 
     // Returns an Option<String> that contains the MAC address if successful.
@@ -51,7 +52,8 @@ impl Host {
             println!("Switch not available");
             return None;
         }
-        let mut switch = switch_rc.unwrap().borrow_mut();
+        let binding = switch_rc.unwrap();
+        let mut switch = binding.borrow_mut();
 
         let response = switch.process_arp_request(Rc::new(request), self.port);
         if let Some(ref resp) = response {
@@ -67,14 +69,17 @@ impl Host {
         let hop_dest_ip = if self.ip_address.get(..9) == dest_ip.get(..9) {
             dest_ip.to_string()
         } else {
-            let mut found = None;
+            let mut found: Option<(String, usize)> = None;
             for (router_ip, networks) in &self.routing_table {
-                if networks.iter().any(|net| dest_ip.get(..9) == net.get(..9)) {
-                    found = Some(router_ip.clone());
-                    break;
+                for (net, metric) in networks {
+                    if dest_ip.get(..9) == net.get(..9) {
+                        if found.is_none() || *metric < found.as_ref().unwrap().1 {
+                            found = Some((router_ip.clone(), *metric));
+                        }
+                    }
                 }
             }
-            if let Some(router_ip) = found {
+            if let Some((router_ip, _)) = found {
                 router_ip
             } else {
                 println!("No route to {}", dest_ip);
@@ -108,7 +113,8 @@ impl Host {
             println!("Switch not available");
             return;
         }
-        let mut switch = switch_rc.unwrap().borrow_mut();
+        let binding = switch_rc.unwrap();
+        let mut switch = binding.borrow_mut();
 
         // Clone so that we maintain ownership of the packet
         self.outgoing_packets.push(Rc::clone(&request));
@@ -144,22 +150,25 @@ impl Host {
 
         // Determine next hop for response using the same logic
         let hop_dest_ip = if self.ip_address.get(..9) == request.src_ip.get(..9) {
-            Some(request.src_ip.to_string())
+            Some((request.src_ip.to_string(), 0))
         } else {
-            let mut found = None;
+            let mut found: Option<(String, usize)> = None;
             for (router_ip, networks) in &self.routing_table {
-                if networks.iter().any(|net| request.src_ip.get(..9) == net.get(..9)) {
-                    found = Some(router_ip.clone());
-                    break;
+                for (net, metric) in networks {
+                    if request.src_ip.get(..9) == net.get(..9) {
+                        if found.is_none() || *metric < found.as_ref().unwrap().1 {
+                            found = Some((router_ip.clone(), *metric));
+                        }
+                    }
                 }
             }
             found
         };
 
         let hop_dest_mac = match hop_dest_ip {
-            Some(ip) => match self.arp_table.get(&ip) {
+            Some((ref ip, _)) => match self.arp_table.get(ip) {
                 Some(mac) => mac.clone(),
-                None => match self.send_arp_request(&ip) {
+                None => match self.send_arp_request(ip) {
                     Some(mac) => mac,
                     None => {
                         println!("No route to {}", request.src_ip);

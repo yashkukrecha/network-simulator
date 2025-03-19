@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
+use std::borrow::BorrowMut;
 use crate::packet::Packet;
 use crate::switch::Switch;
-use crate::device::Device;
 
 #[derive(Debug)]
-struct Router {
+pub struct Router {
     arp_table: HashMap<String, String>, // IP address -> MAC address
     // Network address -> (switch, port, IP address of next hop, MAC address of the interface)
     routing_table: HashMap<String, (Weak<RefCell<Switch>>, usize, String, String)>, 
@@ -49,7 +49,7 @@ R3:
 */
 
 impl Router {
-    fn new(ip_address: String, mac_address: String) -> Self {
+    pub fn new(ip_address: String) -> Self {
         Self {
             arp_table: HashMap::new(),
             routing_table: HashMap::new(),
@@ -59,7 +59,7 @@ impl Router {
         }
     }
 
-    fn populate_routing_table(
+    pub fn populate_routing_table(
         &mut self,
         network: String,
         switch: Weak<RefCell<Switch>>,
@@ -86,7 +86,8 @@ impl Router {
             println!("Switch not available");
             return None;
         }
-        let mut switch = switch_rc.unwrap().borrow_mut();
+        let binding = switch_rc.unwrap();
+        let mut switch = binding.borrow_mut();
 
         let response = switch.process_arp_request(Rc::new(request), port);
         if let Some(ref resp) = response {
@@ -105,9 +106,9 @@ impl Router {
 
         // Find the local MAC address based on the packet's source IP address
         let mut local_mac : Option<String> = None;
-        for (network, (sw, port, router_ip, local_mac)) in &self.routing_table {
+        for (network, (_, _, _, loc_mac)) in &self.routing_table {
             if packet.src_ip.get(..9) == network.get(..9) {
-                local_mac = Some(local_mac.clone());
+                local_mac = Some(loc_mac.clone());
                 break;
             }
         }
@@ -137,7 +138,7 @@ impl Router {
         self.incoming_packets.push(Rc::clone(&request));
 
         // Get (next_hop_ip, corresponding_switch, port, MAC)
-        let mut hop_info: Option<(Weak<RefCell<Switch>>, usize, String,String)> = None;
+        let mut hop_info: Option<(String, Weak<RefCell<Switch>>, usize, String)> = None;
         for (network, (sw, port, router_ip, local_mac)) in &self.routing_table {
             if request.dest_ip.get(..9) == network.get(..9) {
                 if router_ip == "" {
@@ -160,7 +161,7 @@ impl Router {
         // Obtain next hop's MAC address using the provided switch and port
         let hop_dest_mac = match self.arp_table.get(&hop_ip) {
             Some(mac) => mac.clone(),
-            None => match self.send_arp_request(&hop_ip, &local_mac,&hop_switch, hop_port) {
+            None => match self.send_arp_request(&hop_ip, &local_mac, &hop_switch, hop_port) {
                 Some(mac) => mac,
                 None => {
                     println!("No route to {}", request.dest_ip);
@@ -170,7 +171,7 @@ impl Router {
         };
 
         // Rebuild the packet with updated L3 headers so that the correct switch processes it
-        let modified_packet = request.rebuild_L3(local_mac, hop_dest_mac);
+        let modified_packet = request.borrow_mut().rebuild_L3(local_mac, hop_dest_mac);
         let modified_packet = Rc::new(modified_packet);
 
         // Use the switch reference from the routing table entry
@@ -179,7 +180,8 @@ impl Router {
             println!("Switch not available");
             return None;
         }
-        let mut switch = switch_rc.unwrap().borrow_mut();
+        let binding = switch_rc.unwrap();
+        let mut switch = binding.borrow_mut();
 
         // Add to outgoing packets and send the packet through the correct port
         self.outgoing_packets.push(Rc::clone(&modified_packet));
