@@ -32,13 +32,16 @@ impl Host {
 
     pub fn assign_port(&mut self, port: usize) { self.port = port; }
 
-    pub fn populate_routing_table(&mut self, router_ip: String, network: String, metric: usize) {
-        self.routing_table.entry(router_ip).or_insert(Vec::new()).push((network, metric));
+    pub fn populate_routing_table(&mut self, router_ip: String, vector: Vec<(String, usize)>) {
+        self.routing_table.insert(router_ip, vector);
     }
 
     // Returns an Option<String> that contains the MAC address if successful.
     pub fn send_arp_request(&mut self, dest_ip: &str) -> Option<String> {
+        println!("==============================================");
+        println!("HOST: {}", self.ip_address);
         println!("Sending ARP request for {}", dest_ip);
+        println!("==============================================\n");
         let request = Packet::new(
             &self.mac_address,
             "UNKNOWN",
@@ -59,6 +62,11 @@ impl Host {
         let response = switch.process_arp_request(Rc::new(request), self.port);
         if let Some(ref resp) = response {
             self.arp_table.insert(dest_ip.to_string(), resp.src_mac.clone());
+            println!("==============================================");
+            println!("HOST: {}", self.ip_address);
+            println!("Received ARP response from {}", resp.src_ip);
+            println!("ARP Table: {:#?}", self.arp_table);
+            println!("==============================================\n");
             Some(resp.src_mac.clone())
         } else {
             None
@@ -118,9 +126,16 @@ impl Host {
         let mut switch = binding.borrow_mut();
 
         // Clone so that we maintain ownership of the packet
+        println!("==============================================");
+        println!("HOST: {}", self.ip_address);
+        println!("Sending packet for {}", dest_ip);
+        println!("==============================================\n");
         self.outgoing_packets.push(Rc::clone(&request));
         if let Some(response) = switch.process_packet(Rc::clone(&request), self.port) {
+            println!("==============================================");
+            println!("HOST: {}", self.ip_address);
             println!("Received response: {response:#?}");
+            println!("==============================================\n");
             self.incoming_packets.push(response);
         }
     }
@@ -128,8 +143,12 @@ impl Host {
     pub fn receive_arp_request(&mut self, packet: Rc<Packet>) -> Option<Rc<Packet>> {
         // If the ARP request is intended for this host, return the MAC value
         if packet.dest_ip == self.ip_address {
-            println!("Received ARP request from {}", packet.src_ip);
             self.arp_table.insert(packet.src_ip.clone(), packet.src_mac.clone());
+            println!("==============================================");
+            println!("HOST: {}", self.ip_address);
+            println!("Received ARP request from {}", packet.src_ip);
+            println!("ARP Table: {:#?}", self.arp_table);
+            println!("==============================================\n");
             return Some(Rc::new(Packet::new(
                 &self.mac_address,
                 &packet.src_mac,
@@ -150,7 +169,10 @@ impl Host {
 
         // Add to list of incoming packets
         self.incoming_packets.push(Rc::clone(&request));
+        println!("==============================================");
+        println!("HOST: {}", self.ip_address);
         println!("Received packet: {request:#?}");
+        println!("==============================================\n");
 
         // Determine next hop for response using the same logic
         let hop_dest_ip = if self.ip_address.get(..9) == request.src_ip.get(..9) {
@@ -198,5 +220,14 @@ impl Host {
         // Clone so that we maintain ownership of the packet
         self.outgoing_packets.push(Rc::clone(&response));
         Some(response)
+    }
+
+    pub fn print_host_info(&self) {
+        println!("==============================================");
+        println!("HOST: {}", self.ip_address);
+        println!("ARP Table: {:#?}", self.arp_table);
+        println!("Outgoing Packets: {:#?}", self.outgoing_packets);
+        println!("Incoming Packets: {:#?}", self.incoming_packets);
+        println!("==============================================\n");
     }
 }

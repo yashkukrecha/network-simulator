@@ -71,6 +71,10 @@ impl Router {
 
     // Returns an Option<String> that contains the MAC address if successful.
     pub fn send_arp_request(&mut self, dest_ip: &str, src_mac: &str, switch_ref: Weak<RefCell<Switch>>, port: usize) -> Option<String> {
+        println!("==============================================");
+        println!("ROUTER: {}", self.ip_address);
+        println!("Sending ARP request for {}", dest_ip);
+        println!("==============================================\n");
         let request = Packet::new(
             src_mac,
             "UNKNOWN",
@@ -115,6 +119,11 @@ impl Router {
         // If the ARP request is intended for this host, return the MAC value
         if let Some(mac) = local_mac {
             self.arp_table.insert(packet.src_ip.clone(), packet.src_mac.clone());
+            println!("==============================================");
+            println!("ROUTER: {}", self.ip_address);
+            println!("Received ARP request from {}", packet.src_ip);
+            println!("ARP Table: {:#?}", self.arp_table);
+            println!("==============================================\n");
             return Some(Rc::new(Packet::new(
                 &mac,
                 &packet.src_mac,
@@ -135,6 +144,10 @@ impl Router {
 
         // Add to list of incoming packets
         self.incoming_packets.push(Rc::clone(&request));
+        println!("==============================================");
+        println!("ROUTER: {}", self.ip_address);
+        println!("Received packet: {request:#?}");
+        println!("==============================================\n");
 
         // Get (next_hop_ip, corresponding_switch, port, MAC)
         let mut hop_info: Option<(String, Weak<RefCell<Switch>>, usize, String)> = None;
@@ -184,10 +197,32 @@ impl Router {
 
         // Add to outgoing packets and send the packet through the correct port
         self.outgoing_packets.push(Rc::clone(&modified_packet));
+        println!("==============================================");
+        println!("ROUTER: {}", self.ip_address);
+        println!("Forwarding packet for {}", request.dest_ip);
+        println!("==============================================\n");
         if let Some(response) = switch.process_packet(Rc::clone(&modified_packet), hop_port) {
             self.incoming_packets.push(Rc::clone(&response));
-            return Some(response);
+            println!("==============================================");
+            println!("ROUTER: {}", self.ip_address);
+            println!("Forwarding packet for {}", response.dest_ip);
+            println!("==============================================\n");
+
+            // make sure to replace the source MAC and destination MAC
+            let modified_response = response.rebuild_L3(request.dest_mac.clone(), request.src_mac.clone());
+            let modified_response = Rc::new(modified_response);
+            self.outgoing_packets.push(Rc::clone(&modified_response));
+            return Some(modified_response);
         }
         None
+    }
+
+    pub fn print_router_info(&self) {
+        println!("==============================================");
+        println!("ROUTER: {}", self.ip_address);
+        println!("ARP Table: {:#?}", self.arp_table);
+        println!("Outgoing Packets: {:#?}", self.outgoing_packets);
+        println!("Incoming Packets: {:#?}", self.incoming_packets);
+        println!("==============================================\n");
     }
 }
