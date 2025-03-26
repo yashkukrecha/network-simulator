@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
-use std::borrow::BorrowMut;
 use crate::packet::Packet;
 use crate::switch::Switch;
 
@@ -71,7 +70,7 @@ impl Router {
     }
 
     // Returns an Option<String> that contains the MAC address if successful.
-    pub fn send_arp_request(&mut self, dest_ip: &str, src_mac: &str, switch: &Weak<RefCell<Switch>>, port: usize) -> Option<String> {
+    pub fn send_arp_request(&mut self, dest_ip: &str, src_mac: &str, switch_ref: Weak<RefCell<Switch>>, port: usize) -> Option<String> {
         let request = Packet::new(
             src_mac,
             "UNKNOWN",
@@ -81,7 +80,7 @@ impl Router {
             true
         );
 
-        let switch_rc = switch.upgrade();
+        let switch_rc = switch_ref.upgrade();
         if switch_rc.is_none() {
             println!("Switch not available");
             return None;
@@ -161,7 +160,7 @@ impl Router {
         // Obtain next hop's MAC address using the provided switch and port
         let hop_dest_mac = match self.arp_table.get(&hop_ip) {
             Some(mac) => mac.clone(),
-            None => match self.send_arp_request(&hop_ip, &local_mac, &hop_switch, hop_port) {
+            None => match self.send_arp_request(&hop_ip, &local_mac, hop_switch.clone(), hop_port) {
                 Some(mac) => mac,
                 None => {
                     println!("No route to {}", request.dest_ip);
@@ -171,7 +170,7 @@ impl Router {
         };
 
         // Rebuild the packet with updated L3 headers so that the correct switch processes it
-        let modified_packet = request.borrow_mut().rebuild_L3(local_mac, hop_dest_mac);
+        let modified_packet = request.rebuild_L3(local_mac, hop_dest_mac);
         let modified_packet = Rc::new(modified_packet);
 
         // Use the switch reference from the routing table entry

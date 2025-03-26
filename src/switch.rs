@@ -33,6 +33,10 @@ impl Switch {
     pub fn process_arp_request(&mut self, packet: Rc<Packet>, port: usize) -> Option<Rc<Packet>> {
         // Add to MAC table
         self.mac_table.entry(packet.src_mac.clone()).or_insert(port);
+        println!("==============================================");
+        println!("Received ARP request from {}", packet.src_ip);
+        println!("ARP Request: {packet:#?}");
+        println!("==============================================");
 
         // For all other occupied ports except the one that sent the request, send the request
         for (i, device) in self.ports.iter().enumerate() {
@@ -52,6 +56,10 @@ impl Switch {
     pub fn process_packet(&mut self, packet: Rc<Packet>, port: usize) -> Option<Rc<Packet>> {
         // Add to MAC table
         self.mac_table.entry(packet.src_mac.clone()).or_insert(port);
+        println!("==============================================");
+        println!("Received Packet from {}", packet.src_ip);
+        println!("Packet: {packet:#?}");
+        println!("==============================================");
 
         // Check if destination is in MAC table
         if let Some(&target_port) = self.mac_table.get(&packet.dest_mac) {

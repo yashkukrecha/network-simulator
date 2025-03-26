@@ -22,7 +22,7 @@ fn main() {
     )));
 
     // Add router to switch
-    let router1_port = switch1.borrow_mut().add_device(Rc::clone(&(router1 as Rc<RefCell<dyn Device>>))).unwrap();
+    let router1_port = switch1.borrow_mut().add_device(Rc::clone(&(router1.clone() as Rc<RefCell<dyn Device>>))).unwrap();
 
     // Create two hosts
     let host1 = Rc::new(RefCell::new(Host::new(
@@ -39,8 +39,8 @@ fn main() {
     )));
 
     // Add hosts to switch
-    let host1_port = switch1.borrow_mut().add_device(Rc::clone(&(host1 as Rc<RefCell<dyn Device>>))).unwrap();
-    let host2_port = switch1.borrow_mut().add_device(Rc::clone(&(host2 as Rc<RefCell<dyn Device>>))).unwrap();
+    let host1_port = switch1.borrow_mut().add_device(Rc::clone(&(host1.clone() as Rc<RefCell<dyn Device>>))).unwrap();
+    let host2_port = switch1.borrow_mut().add_device(Rc::clone(&(host2.clone() as Rc<RefCell<dyn Device>>))).unwrap();
 
     // Update host ports
     host1.borrow_mut().assign_port(host1_port);
@@ -71,7 +71,7 @@ fn main() {
     println!("=== Sending packet from Host 1 to Host 2 ===");
     host1.borrow_mut().send_packet(
         "192.168.1.3",
-        b"Hello from Host 1!".to_vec(),
+        b"Hello".to_vec(),
     );
 }
 

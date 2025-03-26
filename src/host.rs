@@ -38,6 +38,7 @@ impl Host {
 
     // Returns an Option<String> that contains the MAC address if successful.
     pub fn send_arp_request(&mut self, dest_ip: &str) -> Option<String> {
+        println!("Sending ARP request for {}", dest_ip);
         let request = Packet::new(
             &self.mac_address,
             "UNKNOWN",
@@ -119,6 +120,7 @@ impl Host {
         // Clone so that we maintain ownership of the packet
         self.outgoing_packets.push(Rc::clone(&request));
         if let Some(response) = switch.process_packet(Rc::clone(&request), self.port) {
+            println!("Received response: {response:#?}");
             self.incoming_packets.push(response);
         }
     }
@@ -126,6 +128,7 @@ impl Host {
     pub fn receive_arp_request(&mut self, packet: Rc<Packet>) -> Option<Rc<Packet>> {
         // If the ARP request is intended for this host, return the MAC value
         if packet.dest_ip == self.ip_address {
+            println!("Received ARP request from {}", packet.src_ip);
             self.arp_table.insert(packet.src_ip.clone(), packet.src_mac.clone());
             return Some(Rc::new(Packet::new(
                 &self.mac_address,
@@ -147,6 +150,7 @@ impl Host {
 
         // Add to list of incoming packets
         self.incoming_packets.push(Rc::clone(&request));
+        println!("Received packet: {request:#?}");
 
         // Determine next hop for response using the same logic
         let hop_dest_ip = if self.ip_address.get(..9) == request.src_ip.get(..9) {
@@ -187,7 +191,7 @@ impl Host {
             &hop_dest_mac,
             &self.ip_address,
             &request.src_ip,
-            Vec::new(),
+            request.data.clone(),
             false
         ));
 
