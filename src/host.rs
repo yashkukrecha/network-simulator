@@ -36,6 +36,8 @@ impl Host {
         self.routing_table.insert(router_ip, vector);
     }
 
+    pub fn get_ip_address(&self) -> String { self.ip_address.clone() }
+
     // Returns an Option<String> that contains the MAC address if successful.
     pub fn send_arp_request(&mut self, dest_ip: &str) -> Option<String> {
         println!("==============================================");
@@ -222,12 +224,10 @@ impl Host {
         Some(response)
     }
 
-    pub fn print_host_info(&self) {
-        println!("==============================================");
-        println!("HOST: {}", self.ip_address);
-        println!("ARP Table: {:#?}", self.arp_table);
-        println!("Outgoing Packets: {:#?}", self.outgoing_packets);
-        println!("Incoming Packets: {:#?}", self.incoming_packets);
-        println!("==============================================\n");
+    pub fn get_host_info(&self) -> String {
+        format!(
+            "======================================\nHOST: {}\nARP Table: {:#?}\nOutgoing Packets: {:#?}\nIncoming Packets: {:#?}\n======================================\n",
+            self.ip_address, self.arp_table, self.outgoing_packets, self.incoming_packets
+        )
     }
 }

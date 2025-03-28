@@ -44,6 +44,7 @@ impl Switch {
             if let Some(dev) = device {
                 if i != port {
                     if let Some(response) = dev.borrow_mut().receive_arp_request(Rc::clone(&packet)) {
+                        self.mac_table.entry(response.src_mac.clone()).or_insert(i);
                         return Some(response);
                     }
                 }
@@ -82,5 +83,12 @@ impl Switch {
         }
         
         None
+    }
+
+    pub fn get_switch_info(&self) -> String {
+        format!(
+            "======================================\nSWITCH\nMAC Table: {:#?}\n======================================\n",
+            self.mac_table
+        )
     }
 }

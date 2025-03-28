@@ -69,6 +69,8 @@ impl Router {
         self.routing_table.insert(network, (switch, port, router_ip, local_mac));
     }
 
+    pub fn get_ip_address(&self) -> String { self.ip_address.clone() }
+
     // Returns an Option<String> that contains the MAC address if successful.
     pub fn send_arp_request(&mut self, dest_ip: &str, src_mac: &str, switch_ref: Weak<RefCell<Switch>>, port: usize) -> Option<String> {
         println!("==============================================");
@@ -217,12 +219,10 @@ impl Router {
         None
     }
 
-    pub fn print_router_info(&self) {
-        println!("==============================================");
-        println!("ROUTER: {}", self.ip_address);
-        println!("ARP Table: {:#?}", self.arp_table);
-        println!("Outgoing Packets: {:#?}", self.outgoing_packets);
-        println!("Incoming Packets: {:#?}", self.incoming_packets);
-        println!("==============================================\n");
+    pub fn get_router_info(&self) -> String {
+        format!(
+            "======================================\nROUTER: {}\nARP Table: {:#?}\nOutgoing Packets: {:#?}\nIncoming Packets: {:#?}\n======================================\n",
+            self.ip_address, self.arp_table, self.outgoing_packets, self.incoming_packets
+        )
     }
 }
