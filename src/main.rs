@@ -274,35 +274,6 @@ fn main() {
 
     // WORKING: host-to-host and host-to-router-to-host communication
 
-    // println!("=== Sending packet from Host A to Host B ===");
-    // host_a.borrow_mut().send_packet(
-    //     "192.168.1.B",
-    //     b"Hello".to_vec(),
-    // );
-
-    // println!("=== Sending packet from Host A to Host C ===");
-    // host_a.borrow_mut().send_packet(
-    //     "192.168.2.C",
-    //     b"Hello".to_vec(),
-    // );
-
-    // println!("=== Sending packet from Host C to Host E ===");
-    // host_c.borrow_mut().send_packet(
-    //     "192.168.3.E",
-    //     b"Hello".to_vec(),
-    // );
-
-    // println!("=== Sending packet from Host C to Host E ===");
-    // host_c.borrow_mut().send_packet(
-    //     "192.168.3.E",
-    //     b"Hello".to_vec(),
-    // );
-
-    // host_a.borrow_mut().print_host_info();
-    // host_b.borrow_mut().print_host_info();
-    // router1.borrow_mut().print_router_info();
-    // host_c.borrow_mut().print_host_info();
-
     let mut app = NetworkApp::default();
     app.add_host_node("Host A", 150.0, 500.0, Rc::clone(&(host_a.clone() as Rc<RefCell<dyn Device>>)));
     app.add_host_node("Host B", 150.0, 400.0, Rc::clone(&(host_b.clone() as Rc<RefCell<dyn Device>>)));

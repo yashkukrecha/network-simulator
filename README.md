@@ -6,9 +6,9 @@ A Rust-based network simulator is an educational tool that mimics packet transpo
 
 - **Rust**: Core language used for developing the simulator.
 - **Cargo**: Rust's package manager and build tool.
+- **Egui**: For handling terminal-based interaction and GUI.
 - **Tokio**: Asynchronous runtime for handling concurrency, particularly for threads simulating packet forwarding and handling.
 - **Serde**: For serializing and deserializing data, especially useful for network packet data structures.
-- **Egui**: For handling terminal-based interaction and GUI.
 
 ## Features
 
@@ -59,4 +59,6 @@ To get started with the simulator, clone the repository and compile the project:
 ```bash
 git clone https://github.com/yashkukrecha/network-simulator.git
 cd network-simulator
-cargo build
+cargo run
+```
+Have fun learning about networking!
