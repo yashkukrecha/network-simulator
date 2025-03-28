@@ -61,4 +61,8 @@ git clone https://github.com/yashkukrecha/network-simulator.git
 cd network-simulator
 cargo run
 ```
-Have fun learning about networking!
+Have fun learning about networking! Here is a basic demonstration:
+
+https://github.com/user-attachments/assets/86285c36-0331-4845-a725-60f69956ba6b
+
+
